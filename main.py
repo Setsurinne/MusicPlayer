@@ -3,15 +3,18 @@ import tkinter
 import random
 import music
 import OS_File
-'''
 from tkinter import ttk
+from pymediainfo import MediaInfo
+import re
+
+
+'''
 from tkinter import Entry
 from tkinter import messagebox
 from tkinter import PhotoImage
 import threading
 import sys
 import time
-import re
 import os
 '''
 
@@ -25,6 +28,8 @@ index_of_music = nan
 
 play_list = []
 index_in_list = nan
+
+current_music = {'name': '', 'length': ''}
 
 play_mode = 0
 
@@ -122,6 +127,8 @@ def play_Music():
     check_prev_state()
     show_Playingmusic_inlist()
     track.play(music_path)
+    progress_bar.stop()
+    progress_bar.start(1)
 
 
 # Command when click play buttom
@@ -136,12 +143,22 @@ def play_on_click():
 # Pause the music and show information
 def show_pause():
     global paused
-    global on_play
+
+    # Unpause
     if paused:
         track.unpause()
+        progress_bar.start(1)
         play_button_info.set('Pause')      
         paused_text.set('')
+
+    # Pause
     else:
+        # Pause the progressbar
+        current_prog = progress_bar['value']
+        progress_bar.stop()
+        progress_bar['value'] = current_prog
+
+        # Pause the music
         track.pause()
         play_button_info.set('Continue')  
         paused_text.set('Paused')
@@ -198,18 +215,22 @@ def change_Mode():
     mode_info.set(MODE[play_mode])
 
 
+# Pharse music information: name and length
+#   Then update corrsponding text
 def parse_Music_Info(path):
-    global music_name
-    music_name.set(path[path.find('\\') + 1 : ])
-    '''
-    global music_length
+    global current_music
+    current_music['name'] = path[path.find('\\') + 1 : ]
+    music_name_label['text'] = current_music['name']
+    
+    # Get the length of the music, and update the maximum size of progress bar
     info = MediaInfo.parse(path).to_json()
     rst=re.search('other_duration.*?(.*?)min(.*?)s.*?',info)
     min=int(rst.group(0)[19:20])
     sec=int(rst.group(0)[-4:-2])
-    music_length.set(str(min) + ':' + str(sec))
-    total_time = (min*60+sec)*1000
-    '''
+    current_music['length'] = (str(min) + ':' + str(sec))
+    progress_bar['maximum'] = (float((min*60+sec)*1000))
+    print(current_music['length'])
+    
 
 
 
@@ -224,10 +245,14 @@ def check_prev_state():
 # Function that check if current music end
 #   If yes, automatically play next music
 def auto_next():
-    if(on_play == True and track.onPlay() == False):
+    if(on_play == True and paused == False and track.onPlay() == False):
         print("Next...")
         play_Next()
     interface.after(1000,auto_next)
+
+
+
+
 
 ## ----------------------------------------------------------------------------
 # Interface
@@ -245,9 +270,8 @@ musics += OS_File.readMusicFromFolder(musicFolder)
 
 
 # Music Name Label
-music_name = tkinter.StringVar()
-music_name.set('No music playing...')
-music_name_label = tkinter.Label(interface, font = ('Arial', 14), textvariable = music_name)
+# music_name = tkinter.StringVar()
+music_name_label = tkinter.Label(interface, font = ('Arial', 14), text = current_music['name'])
 music_name_label.place(x = interface_length * 1 / 3, y = interface_height * 10 / 12)
 
 # Paused Label; rightcorner
@@ -309,7 +333,7 @@ vol_scale = tkinter.Scale(interface,
                             orient = tkinter.VERTICAL, 
                             length = interface_height / 3, 
                             command = scale_Volume)
-vol_scale.set(50)
+vol_scale.set(25)
 vol_scale.place(x = interface_length * 1 / 20, y = interface_height * 3/5)
 
 # Frame for the Music list
@@ -332,6 +356,14 @@ for item in musics:
 
 music_list.pack()
 music_list_scroll.config(command = music_list.yview)
+
+
+# Music Prograss bar
+progress_bar = ttk.Progressbar(interface, 
+                                length = interface_length * 3/4, 
+                                mode="determinate", 
+                                orient = 'horizontal')
+progress_bar.pack()
 
 
 interface.after(1000,auto_next)
