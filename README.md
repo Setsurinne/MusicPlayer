@@ -4,7 +4,8 @@
 To do list: (21.6.1)
 
 □ Music play bar
-    Which could show the progressa and control the music
+    
+   Which could show the progressa and control the music
 
 □ Music detailed info display
 
