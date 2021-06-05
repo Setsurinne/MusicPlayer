@@ -1,6 +1,7 @@
 from math import nan
 import tkinter
 import random
+from tkinter.constants import YES
 import music
 import OS_File
 from tkinter import ttk
@@ -242,6 +243,7 @@ def check_prev_state():
     else:
         prev_button['state'] = 'normal'
 
+
 # Function that check if current music end
 #   If yes, automatically play next music
 def auto_next():
@@ -259,49 +261,52 @@ def auto_next():
 interface = tkinter.Tk()
 interface.title("Setsurinne's Music Player!")
 
-interface_length = 1000
-interface_height = 600
+interface_length = 1022
+interface_height = 670
 interface.geometry('{:d}x{:d}'.format(interface_length, interface_height))
-
+interface.minsize(interface_length, interface_height)
+interface.attributes('-alpha', 0.85)
 
 musicPath = "C:/Users/15253/Desktop/PY/MusicPlayer/music.mp3"
 musicFolder = "E:/CloudMusic"
 musics += OS_File.readMusicFromFolder(musicFolder)
 
 
-# Music Name Label
-# music_name = tkinter.StringVar()
-music_name_label = tkinter.Label(interface, font = ('Arial', 14), text = current_music['name'])
-music_name_label.place(x = interface_length * 1 / 3, y = interface_height * 10 / 12)
+# Music Name Label, bottom-left corner
+music_name_label = tkinter.Label(interface, 
+                                font = ('Arial', 14), 
+                                text = current_music['name'])
+music_name_label.place(relx = 0.0, rely = 1.0, anchor='sw')
 
-# Paused Label; rightcorner
+# Paused Label; bottom-right corner
 paused_text = tkinter.StringVar()
 paused_label = tkinter.Label(interface, font =  ('Arial', 9), textvariable = paused_text)
-paused_label.place(rely=1.0, relx=1.0, x = 0, y = 0, anchor='se')
+paused_label.place(rely=1.0, relx=1.0, anchor='se')
+
+
+control_frame = tkinter.Frame()
 
 
 # Play/Pause/Continue Buttom
 play_button_info = tkinter.StringVar()
 play_button_info.set('Play Music')
-play_button = tkinter.Button(interface, 
+play_button = tkinter.Button(control_frame, 
                             textvariable = play_button_info, 
                             font = ('Arial', 12), 
                             fg = 'DarkCyan',
                             width = 10, height = 1, 
                             command = play_on_click)
-play_button.place(x = interface_length / 2, y = interface_height * 9/10)
 
 # Next Buttom
-next_button = tkinter.Button(interface, 
+next_button = tkinter.Button(control_frame, 
                             text = "next", 
                             font = ('Arial', 12), 
                             fg = 'DarkCyan',
                             width = 10, height = 1, 
                             command = play_Next)
-next_button.place(x = interface_length * 2 / 3, y = interface_height * 9/10)
 
 # Prev Buttom
-prev_button = tkinter.Button(interface, 
+prev_button = tkinter.Button(control_frame, 
                             text = "prev", 
                             font = ('Arial', 12), 
                             fg = 'DarkCyan',
@@ -309,21 +314,23 @@ prev_button = tkinter.Button(interface,
                             width = 10, height = 1, 
                             command = play_Prev)
 
-prev_button.place(x = interface_length / 3, y = interface_height * 9/10)
-
 # Mode Buttom
 mode_info = tkinter.StringVar()
 mode_info.set("Normal")
 #random_img = tkinter.PhotoImage("Images\\Random.png", height = 50, width=50)
 #normal_img = tkinter.PhotoImage("Images\\Normal.png", height = 50, width=50)
-mode_button = tkinter.Button(interface, 
+mode_button = tkinter.Button(control_frame, 
                             textvariable = mode_info, 
                             font = ('Arial', 12),
                             fg = 'DarkCyan',
                             relief="solid", 
-                            
                             command = change_Mode)
-mode_button.place(x = interface_length / 6, y = interface_height * 9/10)
+
+mode_button.pack(side = 'left', fill = 'x', padx = 15, expand = YES)
+prev_button.pack(side = 'left', fill = 'x', padx = 15, expand = YES)
+play_button.pack(side = 'left', fill = 'x', padx = 15, expand = YES)
+next_button.pack(side = 'left', fill = 'x', padx = 15, expand = YES)
+control_frame.pack(side = 'bottom', ipady = 30)
 
 # Volume Bar
 vol_scale = tkinter.Scale(interface, 
@@ -334,11 +341,11 @@ vol_scale = tkinter.Scale(interface,
                             length = interface_height / 3, 
                             command = scale_Volume)
 vol_scale.set(25)
-vol_scale.place(x = interface_length * 1 / 20, y = interface_height * 3/5)
+vol_scale.place(relx = 1 / 20, rely = 3 / 5)
 
 # Frame for the Music list
 music_list_frame = tkinter.Frame()
-music_list_frame.pack()
+music_list_frame.pack(side = 'top')
 
 # Scroll for the List
 music_list_scroll = tkinter.Scrollbar(music_list_frame)
@@ -354,7 +361,7 @@ music_list.bind('<Double-Button-1>', play_By_click)
 for item in musics:
     music_list.insert("end", item[item.find('\\') + 1 : ])
 
-music_list.pack()
+music_list.pack(fill = 'y')
 music_list_scroll.config(command = music_list.yview)
 
 
@@ -363,7 +370,7 @@ progress_bar = ttk.Progressbar(interface,
                                 length = interface_length * 3/4, 
                                 mode="determinate", 
                                 orient = 'horizontal')
-progress_bar.pack()
+progress_bar.pack(pady=10)
 
 
 interface.after(1000,auto_next)
