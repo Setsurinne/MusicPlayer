@@ -39,3 +39,10 @@ class music(object):
     
     def onPlay(self):
         return pygame.mixer.music.get_busy()
+    
+    def step(self, sec):
+        pygame.mixer.music.set_pos(sec)
+        return
+    
+    def playTime(self):
+        return pygame.mixer.music.get_pos()

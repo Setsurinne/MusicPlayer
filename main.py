@@ -7,15 +7,14 @@ import OS_File
 from tkinter import ttk
 from pymediainfo import MediaInfo
 import re
-
+import threading
+import time
 
 '''
 from tkinter import Entry
 from tkinter import messagebox
 from tkinter import PhotoImage
-import threading
 import sys
-import time
 import os
 '''
 
@@ -30,9 +29,10 @@ index_of_music = nan
 play_list = []
 index_in_list = nan
 
-current_music = {'name': '', 'length': ''}
+current_music = {'name': '', 'length': '', 'time' : 0}
 
-play_mode = 0
+play_mode = 1
+MODE = ["Normal","Random"]
 
 track = music.music()
 on_play = False
@@ -130,6 +130,7 @@ def play_Music():
     track.play(music_path)
     progress_bar.stop()
     progress_bar.start(1)
+    total_length_label['text'] = current_music['length']
 
 
 # Command when click play buttom
@@ -198,6 +199,18 @@ def play_Prev():
         play_Music()
 
 
+# Step the music when clcking the Progress bar
+def step_Music(event):
+    # Prevent click when not on play
+    if (not on_play):
+        return
+
+    current = int(progress_bar['maximum'] / 1000 * event.x / progress_bar['length'])
+    progress_bar['value'] = current * 1000
+
+    track.step(current)
+    return
+
 
 def scale_Volume(self):
     track.setVolume(float(vol_scale.get())/100.00)
@@ -228,7 +241,10 @@ def parse_Music_Info(path):
     rst=re.search('other_duration.*?(.*?)min(.*?)s.*?',info)
     min=int(rst.group(0)[19:20])
     sec=int(rst.group(0)[-4:-2])
-    current_music['length'] = (str(min) + ':' + str(sec))
+
+    current_music['length'] = (str(min) + ':' + "{0:02d}".format(sec))
+    current_music['time'] = (float((min*60+sec)*1000))
+
     progress_bar['maximum'] = (float((min*60+sec)*1000))
     print(current_music['length'])
     
@@ -253,7 +269,29 @@ def auto_next():
     interface.after(1000,auto_next)
 
 
+def get_time(T):
+    min = T // 60
+    sec = T - min * 60
+    return str(min) + ':' + "{0:02d}".format(sec)
 
+# A new thread which update the played time
+def update_play_time(start = 0):
+    current_length_label['text'] = get_time(start)
+
+    current = start
+    total = int(current_music['time'] / 1000)
+    i = 0
+    while (current != total):
+        if (not on_play):
+            continue
+
+        time.sleep(0.1)
+        i += 1
+        if (i == 10):
+            current += 1
+            i = 0
+            current_length_label['text'] = get_time(current)
+    return
 
 
 ## ----------------------------------------------------------------------------
@@ -286,7 +324,6 @@ paused_label.place(rely=1.0, relx=1.0, anchor='se')
 
 control_frame = tkinter.Frame()
 
-
 # Play/Pause/Continue Buttom
 play_button_info = tkinter.StringVar()
 play_button_info.set('Play Music')
@@ -316,7 +353,7 @@ prev_button = tkinter.Button(control_frame,
 
 # Mode Buttom
 mode_info = tkinter.StringVar()
-mode_info.set("Normal")
+mode_info.set(MODE[play_mode])
 #random_img = tkinter.PhotoImage("Images\\Random.png", height = 50, width=50)
 #normal_img = tkinter.PhotoImage("Images\\Normal.png", height = 50, width=50)
 mode_button = tkinter.Button(control_frame, 
@@ -364,14 +401,26 @@ for item in musics:
 music_list.pack(fill = 'y')
 music_list_scroll.config(command = music_list.yview)
 
+progress_frame = tkinter.Frame()
 
 # Music Prograss bar
-progress_bar = ttk.Progressbar(interface, 
-                                length = interface_length * 3/4, 
-                                mode="determinate", 
-                                orient = 'horizontal')
-progress_bar.pack(pady=10)
+current_length_label = tkinter.Label(progress_frame,
+                                    text = "00:00")
+total_length_label = tkinter.Label(progress_frame,
+                                    text = "00:00")
 
+progress_bar = ttk.Progressbar(progress_frame, 
+                                length = interface_length * 3/5, 
+                                mode="determinate", 
+                                orient = 'horizontal',
+                                cursor = 'hand2')
+progress_bar.bind('<ButtonRelease-1>', step_Music)
+
+current_length_label.pack(padx = 2, side = 'left')
+progress_bar.pack(side = 'left')
+total_length_label.pack(padx = 2, side = 'left')
+
+progress_frame.pack(pady=10)
 
 interface.after(1000,auto_next)
 interface.mainloop()
