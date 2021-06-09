@@ -3,7 +3,9 @@
 
 To do list: (21.6.1)
 
-□ Music play bar, which could show the progressa and control the music
+√ （21.6.9） Music play bar, which could show the progress and control the music
+
+□ Overhaul the code: Refractoring.
 
 □ Music detailed info display
 
