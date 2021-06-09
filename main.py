@@ -37,9 +37,6 @@ MODE = ["Normal","Random"]
 track = music.music()
 on_play = False
 paused = False
-
-
-
 ## ----------------------------------------------------------------------------
 # Music play list operation
 def update_play_list(music_index):
@@ -120,17 +117,39 @@ def play_Music():
     if(len(play_list) == 0):
         go_next()
 
+    '''
     print(play_list)
     print(index_of_music)
-
+    '''
+    
     music_path = musics[index_of_music]
     parse_Music_Info(music_path)
     check_prev_state()
     show_Playingmusic_inlist()
     track.play(music_path)
-    progress_bar.stop()
-    progress_bar.start(1)
-    total_length_label['text'] = current_music['length']
+    update_progress_bar('Start')
+
+# Update progress_bar via given mode
+#   Including restarting; Pausing and Unpausing
+def update_progress_bar(mode):
+    if (mode == "Pause"):
+        # Pause the progressbar
+        
+        current_prog = progress_bar['value']
+        progress_bar.stop()
+        progress_bar['value'] = current_prog
+
+    elif (mode == "Unpause"):
+        progress_bar.start(1)
+
+    elif (mode == "Start"):
+        progress_bar.stop()
+        progress_bar.start(1)
+        total_length_label['text'] = current_music['length']
+    
+    else:
+        print("Error: Unknow mode: " + mode)
+    return
 
 
 # Command when click play buttom
@@ -149,21 +168,16 @@ def show_pause():
     # Unpause
     if paused:
         track.unpause()
-        progress_bar.start(1)
         play_button_info.set('Pause')      
         paused_text.set('')
-
+        update_progress_bar('Unpause')
     # Pause
     else:
-        # Pause the progressbar
-        current_prog = progress_bar['value']
-        progress_bar.stop()
-        progress_bar['value'] = current_prog
-
         # Pause the music
         track.pause()
         play_button_info.set('Continue')  
         paused_text.set('Paused')
+        update_progress_bar('Pause')
     paused = not paused
 
 
@@ -246,7 +260,6 @@ def parse_Music_Info(path):
     current_music['time'] = (float((min*60+sec)*1000))
 
     progress_bar['maximum'] = (float((min*60+sec)*1000))
-    print(current_music['length'])
     
 
 
@@ -274,24 +287,16 @@ def get_time(T):
     sec = T - min * 60
     return str(min) + ':' + "{0:02d}".format(sec)
 
-# A new thread which update the played time
-def update_play_time(start = 0):
-    current_length_label['text'] = get_time(start)
 
-    current = start
-    total = int(current_music['time'] / 1000)
-    i = 0
-    while (current != total):
+
+# A new thread which update the played time
+def update_play_time():
+    while (True):
+        time.sleep(0.3)
         if (not on_play):
             continue
-
-        time.sleep(0.1)
-        i += 1
-        if (i == 10):
-            current += 1
-            i = 0
-            current_length_label['text'] = get_time(current)
-    return
+        current = int(progress_bar['value']/1000)
+        current_length_label['text'] = get_time(current)
 
 
 ## ----------------------------------------------------------------------------
@@ -421,6 +426,10 @@ progress_bar.pack(side = 'left')
 total_length_label.pack(padx = 2, side = 'left')
 
 progress_frame.pack(pady=10)
+
+# Set the threading to tracking current music playing time
+thread_music_time = threading.Thread(target = update_play_time, daemon=True)
+thread_music_time.start()
 
 interface.after(1000,auto_next)
 interface.mainloop()
